@@ -2,7 +2,9 @@
 from unittest import TestCase
 from unittest.mock import Mock
 
+import pytest
 from scrapy import Spider
+from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from selenium import webdriver
 
@@ -57,6 +59,19 @@ class SeleniumMiddlewareTestCase(BaseScrapyTestCase):
         selenium_middleware.spider_closed()
 
         mock_driver.quit.assert_called_once()
+
+    @pytest.mark.webtest
+    def test_selenium_process_request(self):
+        """Test that middleware process request with success."""
+        crawler = self._mock_crawler(self.spider_class, self.settings)
+        selenium_middleware = middlewares.SeleniumMiddleware.from_crawler(crawler)
+
+        request = Request(url="http://www.python.org")
+        html_response = selenium_middleware.process_request(request, spider=None)
+
+        self.assertEqual(
+            html_response.selector.xpath("//title/text()").extract_first(), "Welcome to Python.org"
+        )
 
     def _mock_crawler(self, spider, settings=None):
         class MockedDownloader(object):

@@ -63,8 +63,9 @@ class SeleniumMiddleware:
 
     def process_request(self, request: http.Request, spider: Spider) -> http.Response:
         """Process a request using the selenium driver."""
+        driver = self.get_driver()
+
         try:
-            driver = self.get_driver()
             driver.get(request.url)
             url = driver.current_url
             body = to_bytes(driver.page_source)
@@ -82,7 +83,7 @@ class SeleniumMiddleware:
         try:
             driver = self.driver
         except AttributeError:
-            driver = self._get_driver(self)
+            driver = self._get_driver()
             self.driver = driver
         return driver
 
