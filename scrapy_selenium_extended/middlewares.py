@@ -39,11 +39,10 @@ class SeleniumMiddleware(AnnotatedAttributesMixin):
             )
 
         self.set_attribute(settings, dict, "desired_capabilities")
-        self.set_attribute(settings, list, "browser_name")
+        self.set_attribute(settings, str, "browser_name")
         self.set_attribute(settings, list, "driver_arguments")
 
         self._data.desired_capabilities = self.desired_capabilities
-
         if self.browser_name:
             driver_options = self._get_driver_options(self.browser_name)
             for argument in self.driver_arguments:
@@ -55,9 +54,7 @@ class SeleniumMiddleware(AnnotatedAttributesMixin):
     def from_crawler(cls, crawler: Crawler) -> "SeleniumMiddleware":
         """Initialize the middleware with the crawler settings."""
         middleware = cls(crawler.settings)
-
         crawler.signals.connect(middleware.spider_closed, signals.spider_closed)
-
         return middleware
 
     def process_request(self, request: http.Request, spider: Spider) -> http.Response:
