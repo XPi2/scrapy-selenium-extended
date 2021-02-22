@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "scrapy-webdriver"
+name = "scrapy-selenium-extended"
 version = "0.1.0"
-description = "Scrapy with Selenium webdrivers"
+description = "Scrapy plugin to handle javascript pages with Selenium webdrivers."
 authors = ["XPi2 <uxiopineiro@gmail.com>"]
 license = "Unlicensed"
 
@@ -47,6 +47,11 @@ exclude = '''
 )
 '''
 
+[tool.pytest.ini_options]
+markers = [
+  "webtest: marks tests that require connection to web resources.",
+]
+
 [tool.isort]
 profile = "black"
 line_length = 99
@@ -65,3 +70,13 @@ pep8-naming = ["+*"]
 "flake8-*" = ["+*"]
 flake8-docstrings = ["+*", "-D107"]
 flake8-darglint = ["-*"]
+
+[tool.flakehell.exceptions."**/__init__.py"]
+pyflakes = ["-F401"]
+
+[tool.flakehell.exceptions."README.md"]
+flake8-docstrings = ["-*"]
+
+[tool.flakehell.exceptions."tests/"]
+flake8-docstrings = ["-*"]
+flake8-bandit = ["-S101"] # Assert used

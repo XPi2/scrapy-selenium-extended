@@ -8,7 +8,7 @@ from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from selenium import webdriver
 
-from scrapy_webdriver import middlewares
+from scrapy_selenium_extended import middlewares
 
 
 class BaseScrapyTestCase(TestCase):
@@ -38,7 +38,7 @@ class SeleniumMiddlewareTestCase(BaseScrapyTestCase):
         cls.settings.update(
             {
                 "SELENIUM_COMMAND_EXECUTOR": "http://localhost:4444",
-                "SELENIUM_CAPABILITIES": webdriver.DesiredCapabilities.FIREFOX,
+                "SELENIUM_DESIRED_CAPABILITIES": webdriver.DesiredCapabilities.FIREFOX,
             }
         )
 
@@ -72,6 +72,8 @@ class SeleniumMiddlewareTestCase(BaseScrapyTestCase):
         self.assertEqual(
             html_response.selector.xpath("//title/text()").extract_first(), "Welcome to Python.org"
         )
+
+        selenium_middleware.spider_closed()
 
     def _mock_crawler(self, spider, settings=None):
         class MockedDownloader(object):

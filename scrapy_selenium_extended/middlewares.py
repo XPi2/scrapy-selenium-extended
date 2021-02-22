@@ -2,8 +2,7 @@
 from importlib import import_module
 from types import SimpleNamespace
 
-from scrapy import http
-from scrapy import signals
+from scrapy import http, signals
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
@@ -13,43 +12,43 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from twisted.web.client import ResponseFailed
 
-from scrapy_webdriver.utils import get_from_settings
+from scrapy_selenium_extended.mixins import AnnotatedAttributesMixin
 
 
-class SeleniumMiddleware:
+class SeleniumMiddleware(AnnotatedAttributesMixin):
     """Scrapy middleware to handle requests using selenium."""
 
     command_executor: str
     driver_executable_path: str
-    capabilities: dict = {}
+    desired_capabilities: dict = {}
     browser_name: str = ""
-    driver_options: list = []
+    driver_arguments: list = []
 
     _data = SimpleNamespace()
+    _attr_prefix = "selenium_"
 
     def __init__(self, settings: Settings):
         """Initialize the selenium webdriver."""
-        # TODO: Option to local or remote driver
         if "SELENIUM_COMMAND_EXECUTOR" in settings:
-            self._set_attribute(settings, str, "command_executor")
+            self.set_attribute(settings, str, "command_executor")
         elif "SELENIUM_DRIVER_EXECUTABLE_PATH" in settings:
-            self._set_attribute(settings, str, "driver_executable_path")
+            self.set_attribute(settings, str, "driver_executable_path")
         else:
             raise NotConfigured(
                 "One of (SELENIUM_DRIVER_EXECUTABLE_PATH, SELENIUM_COMMAND_EXECUTOR) must be provided"
             )
 
-        self._set_attribute(settings, dict, "capabilities")
-        self._set_attribute(settings, list, "browser_name")
-        self._set_attribute(settings, list, "driver_options")
+        self.set_attribute(settings, dict, "desired_capabilities")
+        self.set_attribute(settings, list, "browser_name")
+        self.set_attribute(settings, list, "driver_arguments")
 
-        self._data.capabilities = self.capabilities
+        self._data.desired_capabilities = self.desired_capabilities
 
         if self.browser_name:
             driver_options = self._get_driver_options(self.browser_name)
-            for argument in self.driver_options:
+            for argument in self.driver_arguments:
                 driver_options.add_argument(argument)
-            self._data.capabilities.update(driver_options.to_capabilities())
+            self._data.desired_capabilities.update(driver_options.to_capabilities())
         # TODO: Raise warning if driver_options but not browser_name
 
     @classmethod
@@ -89,18 +88,18 @@ class SeleniumMiddleware:
 
     def get_local_driver(self) -> webdriver.Remote:
         """Get local driver."""
-        browser_name = self._data.capabilities["browserName"]
+        browser_name = self._data.desired_capabilities["browserName"]
         driver_class = self._get_driver_class(browser_name)
         return driver_class(
             executable_path=self._data.executable_path,
-            capabilities=self._data.capabilities,
+            capabilities=self._data.desired_capabilities,
         )
 
     def get_remote_driver(self) -> webdriver.Remote:
         """Get remote driver."""
         return webdriver.Remote(
             command_executor=self.command_executor,
-            desired_capabilities=self._data.capabilities,
+            desired_capabilities=self._data.desired_capabilities,
         )
 
     def _get_driver(self) -> webdriver.Remote:
@@ -127,12 +126,3 @@ class SeleniumMiddleware:
 
     def _webdriver_base_path(self, browser_name: str) -> str:
         return f"selenium.webdriver.{browser_name}"
-
-    def _set_attribute(self, settings: Settings, type_: type, key: str, default=None) -> None:
-        default_ = getattr(self, key, default)  # Default value
-        setting_key = f"selenium_{key}".upper()
-        if default_ is None and setting_key not in settings:
-            raise NotConfigured(f"{setting_key} has to be set.")
-
-        value = get_from_settings(settings, type_, setting_key, default_)
-        setattr(self, key, value)
